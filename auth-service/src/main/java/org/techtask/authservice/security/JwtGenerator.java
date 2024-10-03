@@ -1,9 +1,12 @@
 package org.techtask.authservice.security;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.core.Authentication;
@@ -13,6 +16,7 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 
+@Slf4j
 @Component
 public class JwtGenerator {
 
@@ -61,8 +65,15 @@ public class JwtGenerator {
                     .build()
                     .parseClaimsJws(token);
             return true;
+        } catch (ExpiredJwtException ex) {
+            log.warn("Token was expired ", ex);
+            throw new AuthenticationCredentialsNotFoundException("JWT was expired", ex);
+        } catch (JwtException ex) {
+            log.warn("Token is incorrect ", ex);
+            throw new AuthenticationCredentialsNotFoundException("JWT is incorrect", ex);
         } catch (Exception ex) {
-            throw new AuthenticationCredentialsNotFoundException("JWT was expired or incorrect", ex);
+            log.warn("Token validation failed", ex);
+            throw new AuthenticationCredentialsNotFoundException("JWT validation failed", ex);
         }
     }
 }
